@@ -6,7 +6,8 @@ from listmaker.matcher import (
     similarity_score,
     is_undesirable_version,
     score_track,
-    read_song_file
+    read_song_file,
+    read_song_text
 )
 
 
@@ -157,6 +158,13 @@ class TestTrackScoring:
 
 
 class TestFileReading:
+    def test_read_song_text(self):
+        songs = read_song_text("Song One - Artist One\nSong Two\n")
+        assert songs == [
+            ("Song One", "Artist One", "Song One - Artist One"),
+            ("Song Two", None, "Song Two"),
+        ]
+
     def test_read_song_file(self, tmp_path):
         # Create test file
         test_file = tmp_path / "test_songs.txt"

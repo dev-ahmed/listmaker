@@ -1,4 +1,4 @@
-# listmaker
+# playlist-maker
 
 Convert plain-text lists into music playlists with one command.
 
@@ -25,7 +25,7 @@ Convert plain-text lists into music playlists with one command.
 2. Log in with your Spotify account
 3. Click "Create app"
 4. Fill in:
-   - App name: `listmaker` (or anything)
+   - App name: `playlist-maker` (or anything)
    - App description: `Personal CLI tool for creating playlists`
    - Redirect URI: `http://127.0.0.1:8888/callback`
    - Check **Web API**
@@ -41,14 +41,15 @@ Convert plain-text lists into music playlists with one command.
 ## Installation
 
 ```bash
-cd listmaker
-pip install -e .
+pip install playlist-maker
 ```
 
-Or with pipx for isolated installation:
+Or install from source:
 
 ```bash
-pipx install .
+git clone https://github.com/dev-ahmed/listmaker.git
+cd listmaker
+pip install -e .
 ```
 
 ## Configuration
@@ -67,7 +68,7 @@ Add these to your `~/.zshrc` or `~/.bashrc` to persist them.
 First time usage:
 
 ```bash
-listmaker auth
+plm auth
 ```
 
 This will:
@@ -109,19 +110,19 @@ Serial - Sarah Koenig
 ### Create playlist
 
 ```bash
-listmaker create songs.txt
+plm create songs.txt
 ```
 
 With custom name:
 
 ```bash
-listmaker create songs.txt --name "My Favorites"
+plm create songs.txt --name "My Favorites"
 ```
 
 Dry run (search without creating playlist):
 
 ```bash
-listmaker create songs.txt --dry-run
+plm create songs.txt --dry-run
 ```
 
 ## How it works
@@ -178,18 +179,18 @@ rm ~/.config/listmaker/cache.json
 - Set `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` environment variables
 
 **"Not authenticated"**
-- Run `listmaker auth`
+- Run `plm auth`
 
 **"Failed to create playlist: 403 Forbidden"**
 - Your Spotify app is in Development Mode
 - Go to https://developer.spotify.com/dashboard
 - Click on your app → "Users and Access"
 - Add your Spotify email address as a user
-- Run `listmaker auth` again to re-authenticate
+- Run `plm auth` again to re-authenticate
 
 **"Failed to create playlist"**
 - Check your Spotify app has the redirect URI `http://127.0.0.1:8888/callback`
-- Make sure you're authenticated: `listmaker auth`
+- Make sure you're authenticated: `plm auth`
 
 **Poor matches**
 - Use the format: `Title - Artist/Creator Name` for better accuracy

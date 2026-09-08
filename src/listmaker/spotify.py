@@ -233,7 +233,7 @@ class SpotifyClient:
                 f"  1. Go to https://developer.spotify.com/dashboard\n"
                 f"  2. Click your app → 'Users and Access'\n"
                 f"  3. Verify '{user_email}' is listed\n"
-                f"  4. If not, add it and re-run: listmaker clear-auth && listmaker auth"
+                f"  4. If not, add it and re-run: plm clear-auth && plm auth"
             )
 
         if response.status_code != 201:

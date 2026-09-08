@@ -13,7 +13,7 @@ from rich.prompt import Confirm, Prompt
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from .spotify import SpotifyClient, CONFIG_DIR, CACHE_FILE
-from .matcher import read_song_file, find_best_match, normalize_string
+from .matcher import read_song_file, read_song_text, find_best_match, normalize_string
 from .utils import format_terminal_text, parse_selection
 
 
@@ -160,7 +160,7 @@ def auth():
 def version():
     """Show version information"""
     from . import __version__
-    console.print(f"listmaker version {__version__}")
+    console.print(f"playlist-maker version {__version__}")
 
 
 @app.command()
@@ -178,7 +178,7 @@ def clear_auth():
         console.print("\nCache file still exists. To clear it:")
         console.print(f"  rm {CACHE_FILE}")
 
-    console.print("\nRun 'listmaker auth' to authenticate again")
+    console.print("\nRun 'plm auth' to authenticate again")
 
 
 @app.command()
@@ -203,7 +203,7 @@ def whoami():
 
     if not client.access_token:
         console.print("[red]Not authenticated[/red]")
-        console.print("Run 'listmaker auth' first")
+        console.print("Run 'plm auth' first")
         raise typer.Exit(1)
 
     try:
@@ -231,7 +231,7 @@ def check_playlist(
     client = SpotifyClient(client_id, client_secret)
 
     if not client.access_token:
-        console.print("[red]Not authenticated. Run 'listmaker auth' first.[/red]")
+        console.print("[red]Not authenticated. Run 'plm auth' first.[/red]")
         raise typer.Exit(1)
 
     if 'spotify.com/playlist/' in playlist_id:
@@ -490,14 +490,14 @@ def add_to_playlist(
 
 @app.command()
 def create(
-    file_path: str = typer.Argument(..., help="Path to list file (songs or podcasts)"),
+    file_path: Optional[str] = typer.Argument(None, help="Optional path to a song or podcast list"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Playlist name"),
     content_type: str = typer.Option("song", "--type", help="Content type: song or podcast"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show matches without creating playlist"),
     batch_size: int = typer.Option(5, "--batch-size", "-b", help="Number of tracks to add per batch"),
     delay: float = typer.Option(2.0, "--delay", "-d", help="Delay in seconds between batches")
 ):
-    """Create Spotify playlist from list file"""
+    """Create a Spotify playlist from a file or pasted text"""
 
     content_type = content_type.lower()
     if content_type not in ('song', 'podcast'):
@@ -505,9 +505,25 @@ def create(
         raise typer.Exit(1)
     search_type = 'episode' if content_type == 'podcast' else 'track'
 
-    # Validate file
-    if not Path(file_path).exists():
+    if file_path and not Path(file_path).exists():
         console.print(f"[red]File not found: {file_path}[/red]")
+        raise typer.Exit(1)
+
+    try:
+        if file_path:
+            console.print(f"Reading {file_path}...\n")
+            songs = read_song_file(file_path)
+            source_name = Path(file_path).name
+        else:
+            console.print("Paste your list below, then press Ctrl-D when finished:\n")
+            songs = read_song_text(sys.stdin.read())
+            source_name = "pasted text"
+    except Exception as e:
+        console.print(f"[red]Failed to read input: {e}[/red]")
+        raise typer.Exit(1)
+
+    if not songs:
+        console.print("[red]No items found in input[/red]")
         raise typer.Exit(1)
 
     # Get credentials and create client
@@ -525,18 +541,6 @@ def create(
 
     # Load cache
     cache = load_cache()
-
-    # Read songs
-    console.print(f"Reading {file_path}...\n")
-    try:
-        songs = read_song_file(file_path)
-    except Exception as e:
-        console.print(f"[red]Failed to read file: {e}[/red]")
-        raise typer.Exit(1)
-
-    if not songs:
-        console.print("[red]No songs found in file[/red]")
-        raise typer.Exit(1)
 
     # Process songs
     matched_tracks: List[Tuple[str, str, str]] = []  # (uri, title, artist)
@@ -634,7 +638,7 @@ def create(
 
     # Determine playlist name
     if not name:
-        name = Path(file_path).stem
+        name = Path(file_path).stem if file_path else "playlist-maker"
 
     # Check if playlist already exists
     console.print(f"\nChecking for existing playlist '{name}'...")
@@ -697,7 +701,7 @@ def create(
             console.print(f"\nCreating playlist...")
             playlist = client.create_playlist(
                 name,
-                description=f"Created by listmaker from {Path(file_path).name}"
+                description=f"Created by playlist-maker from {source_name}"
             )
 
         track_uris = [uri for uri, _, _ in matched_tracks]
@@ -743,8 +747,9 @@ def create(
                     console.print(f"\n[cyan]✓ Successfully added {added} out of {len(track_uris)} tracks[/cyan]")
                     console.print(f"\n[cyan]Playlist created but not all tracks added:[/cyan]")
                     console.print(f"  {playlist['external_urls']['spotify']}")
-                    console.print(f"\n[yellow]To add remaining tracks, use:[/yellow]")
-                    console.print(f"  listmaker add-to-playlist {playlist['id']} {file_path} --batch-size 1")
+                    if file_path:
+                        console.print(f"\n[yellow]To add remaining tracks, use:[/yellow]")
+                        console.print(f"  plm add-to-playlist {playlist['id']} {file_path} --batch-size 1")
                 else:
                     console.print(f"\n[red]✗ Could not add any tracks[/red]")
 

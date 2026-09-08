@@ -153,18 +153,20 @@ def find_best_match(
     return best_track, best_score, top_alternatives
 
 
+def read_song_text(text: str) -> List[Tuple[str, Optional[str], str]]:
+    """Parse songs or podcasts from multiline text."""
+    parsed_lines = (
+        (parse_song_line(line), line.strip())
+        for line in text.splitlines()
+    )
+    return [
+        (title, artist, original_line)
+        for ((title, artist), original_line) in parsed_lines
+        if title
+    ]
+
+
 def read_song_file(file_path: str) -> List[Tuple[str, Optional[str], str]]:
-    """Read and parse song file
-
-    Returns:
-        List of (title, artist, original_line)
-    """
-    songs = []
-
+    """Read and parse a song or podcast file."""
     with open(file_path, 'r', encoding='utf-8') as f:
-        for line_num, line in enumerate(f, 1):
-            title, artist = parse_song_line(line)
-            if title:
-                songs.append((title, artist, line.strip()))
-
-    return songs
+        return read_song_text(f.read())
