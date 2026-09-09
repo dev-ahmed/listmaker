@@ -77,7 +77,7 @@ def format_track(track: Dict[str, Any]) -> str:
     popularity = track.get('popularity', 0)
     display_name = format_terminal_text(name)
     display_artists = format_terminal_text(artists)
-    return f"[{item_type}] {display_name} — {display_artists} [popularity: {popularity}]"
+    return f"{display_name} — {display_artists} [{item_type}] [popularity: {popularity}]"
 
 
 def interactive_select(
@@ -103,7 +103,6 @@ def interactive_select(
         try:
             console.print("\nPress numbers to toggle, Enter to confirm, or S to skip: ", end="")
             choice = readchar.readkey()
-            console.print(choice)
         except (KeyboardInterrupt, EOFError):
             console.print("\n[yellow]Cancelled[/yellow]")
             raise typer.Exit(0)
@@ -113,6 +112,7 @@ def interactive_select(
             raise typer.Exit(0)
 
         if choice in (readchar.key.ENTER, '\n', '\r'):
+            console.print()
             if not selected_indices:
                 console.print("[red]Select at least one number or press S.[/red]")
                 continue
@@ -124,10 +124,12 @@ def interactive_select(
 
         selected_index = parse_selection(choice, len(alternatives))
         if selected_index is None:
+            console.print(choice)
             console.print("[yellow]⊘ Skipped[/yellow]")
             return None
 
         if selected_index >= 0:
+            console.print(choice)
             if selected_index in selected_indices:
                 selected_indices = tuple(
                     index for index in selected_indices if index != selected_index
@@ -138,6 +140,7 @@ def interactive_select(
             console.print(f"[cyan]Selected: {selected_numbers or 'none'}[/cyan]")
             continue
 
+        console.print(choice)
         console.print("[red]Invalid choice. Press a listed number or S.[/red]")
 
 
